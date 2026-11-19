@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sinyal Multi-sumber{% endblock %}
+{% block page_heading %}Input Sinyal Multi-sumber{% endblock %}
+{% block content %}
+<div class="welcome-row"><div><h2>Gabungkan sinyal kesehatan, lingkungan, dan tenaga kerja</h2><p>Masukkan nilai agregat atau ringkasan sensor; jangan memasukkan identitas individu.</p></div><span class="pill">Input terautentikasi</span></div>
+<div class="notice"><span class="notice-icon">i</span><div><b>Definisi sumber data</b><p>Laporan pada menu Input Laporan menjadi sumber layanan kesehatan. Halaman ini menambahkan sinyal lingkungan dan tenaga kerja. Pastikan sumber, satuan, tanggal, dan hak penggunaan data terdokumentasi.</p></div></div>
+<div class="form-layout">
+  <article class="panel form-panel"><div class="panel-heading"><div><h3>Tambah pengamatan sinyal</h3><p>Nilai agregat; satu baris untuk satu pengamatan.</p></div></div>
+    <form method="post" class="report-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Tanggal pengamatan<input type="date" name="observed_on" value="{{ today }}" max="{{ today }}" required></label>
+      <label>Wilayah / unit kerja<input type="text" name="region" maxlength="100" placeholder="Gunakan nama wilayah yang sama pada semua sumber" required></label>
+      <label>Jenis indikator
+        <select name="metric" required>
+          <option value="temperature_c">Suhu lingkungan (°C) · Lingkungan</option>
+          <option value="air_quality_index">Indeks kualitas udara (AQI) · Lingkungan</option>
+          <option value="absenteeism_rate">Tingkat ketidakhadiran (%) · Tenaga kerja</option>
+          <option value="workplace_incidents">Insiden tempat kerja (kejadian) · Tenaga kerja</option>
+        </select>
+      </label>
+      <label>Nilai pengamatan<input type="number" name="value" min="0" step="0.01" required placeholder="Contoh: 32.5"></label>
+      <label>Nama sumber data<input type="text" name="source_name" maxlength="120" required placeholder="Contoh: Ringkasan sensor lingkungan"></label>
+      <label>Catatan agregat (opsional)<textarea name="notes" maxlength="300" rows="2" placeholder="Metode pengukuran, periode, atau catatan kualitas data"></textarea></label>
+      <button class="button primary" type="submit">Simpan sinyal</button>
+    </form>
+  </article>
+  <aside class="panel guidance"><span class="guidance-icon">✦</span><h3>Bagaimana sinyal digunakan?</h3><ul><li>Laporan kesehatan dipadukan dengan metrik lingkungan dan tenaga kerja berdasarkan wilayah dan tanggal.</li><li>Isolation Forest digunakan saat data historis lintas sumber mencukupi.</li><li>Robust z-score bergulir membantu menjelaskan metrik yang menyimpang dari baseline.</li><li>Jika riwayat belum cukup, aplikasi memberi status belum cukup data—bukan memaksakan kesimpulan.</li></ul><div class="notice compact"><span class="notice-icon">!</span><p>Analisis bersifat eksperimental. Sinyal anomali bukan diagnosis, bukan bukti sebab-akibat, dan harus diverifikasi manusia.</p></div></aside>
+</div>
+<article class="panel table-panel"><div class="table-heading"><div><h3>Pengamatan sinyal terbaru</h3><p>{{ observations|length }} baris terakhir ditampilkan.</p></div></div>
+<div class="table-scroll"><table><thead><tr><th>TANGGAL</th><th>WILAYAH</th><th>SUMBER</th><th>INDIKATOR</th><th>NILAI</th><th>ASAL DATA</th></tr></thead><tbody>
+{% for item in observations %}<tr><td>{{ item.observed_on.strftime('%d %b %Y') }}</td><td>{{ item.region }}</td><td>{{ 'Lingkungan' if item.source_type == 'environment' else 'Tenaga kerja' }}</td><td>{{ metrics[item.metric].label if item.metric in metrics else item.metric }}</td><td>{{ item.value }} {{ item.unit }}</td><td>{{ 'Simulasi' if item.demo_record else item.source_name }}</td></tr>{% else %}<tr><td colspan="6">Belum ada sinyal tambahan.</td></tr>{% endfor %}
+</tbody></table></div></article>
+{% endblock %}

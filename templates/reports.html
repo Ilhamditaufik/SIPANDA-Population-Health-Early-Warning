@@ -1,0 +1,280 @@
+
+{% extends "base.html" %}
+
+{% block title %}Input Laporan{% endblock %}
+{% block page_heading %}Input Laporan Kesehatan{% endblock %}
+
+{% block content %}
+
+<div class="welcome-row">
+    <div>
+        <h2>Catat indikator kesehatan</h2>
+        <p>
+            Masukkan data agregat tanpa nama, NIK,
+            atau identitas personal.
+        </p>
+    </div>
+</div>
+
+<div class="form-layout">
+
+    <article class="panel form-panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Formulir laporan baru</h3>
+                <p>Semua kolom bertanda wajib diisi.</p>
+            </div>
+        </div>
+
+        <form method="post" class="report-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label>
+                Tanggal laporan
+                <input
+                    type="date"
+                    name="report_date"
+                    value="{{ today }}"
+                    max="{{ today }}"
+                    required
+                >
+            </label>
+
+            <label>
+                Jenis pemantauan
+                <select name="domain" required>
+                    <option value="population">
+                        Kesehatan populasi
+                    </option>
+                    <option value="workforce">
+                        Kesehatan tenaga kerja
+                    </option>
+                </select>
+            </label>
+
+            <label>
+                Wilayah / unit kerja
+                <input
+                    type="text"
+                    name="region"
+                    maxlength="100"
+                    placeholder="Contoh: Kota Contoh / Unit Produksi A"
+                    required
+                >
+            </label>
+
+            <label>
+                Indikator
+                <select name="indicator" required>
+                    <option value="gejala_pernapasan">Gejala pernapasan</option>
+                    <option value="demam">Demam</option>
+                    <option value="batuk">Batuk</option>
+                    <option value="diare">Diare</option>
+                    <option value="keluhan_panas">Keluhan terkait panas</option>
+                    <option value="kelelahan">Kelelahan</option>
+                    <option value="keluhan_pernapasan">
+                        Keluhan pernapasan tenaga kerja
+                    </option>
+                    <option value="keluhan_kesehatan">
+                        Keluhan kesehatan umum
+                    </option>
+                    <option value="cedera_kerja">Cedera kerja</option>
+                    <option value="keluhan_lainnya">
+                        Keluhan lain (agregat)
+                    </option>
+                </select>
+            </label>
+
+            <label>
+                Jumlah laporan
+                <input
+                    type="number"
+                    name="count"
+                    min="1"
+                    max="100000"
+                    value="1"
+                    required
+                >
+            </label>
+
+            <label>
+                Catatan agregat (opsional)
+                <textarea
+                    name="notes"
+                    maxlength="500"
+                    rows="3"
+                    placeholder="Hindari menulis nama atau informasi identitas seseorang."
+                ></textarea>
+            </label>
+
+            <button class="button primary" type="submit">
+                Simpan laporan
+            </button>
+
+        </form>
+    </article>
+
+    <aside class="panel guidance">
+        <span class="guidance-icon">✦</span>
+        <h3>Panduan pengisian aman</h3>
+
+        <ul>
+            <li>Gunakan jumlah agregat, bukan rekam medis individu.</li>
+            <li>Pastikan sumber dan periode data jelas sebelum dipakai.</li>
+            <li>Data simulasi tidak boleh dianggap sebagai data aktual.</li>
+            <li>Peningkatan tidak biasa harus diverifikasi petugas berwenang.</li>
+        </ul>
+
+        <div class="notice compact">
+            <span class="notice-icon">i</span>
+            <p>
+                Halaman ini memerlukan login dan menerapkan pembatasan peran.
+                Kontrol tersebut adalah perlindungan prototipe, bukan sertifikasi
+                keamanan produksi. Jangan masukkan data pribadi atau data kesehatan nyata.
+            </p>
+        </div>
+    </aside>
+
+</div>
+
+<article class="panel table-panel">
+
+    <div class="panel-heading">
+        <div>
+            <h3>Riwayat laporan</h3>
+            <p>
+                Ditemukan {{ total_filtered }} laporan sesuai filter.
+                Maksimal 100 baris ditampilkan pada halaman ini.
+            </p>
+        </div>
+    </div>
+
+    {% if filter_error %}
+    <div class="notice compact">
+        <p>{{ filter_error }}</p>
+    </div>
+    {% endif %}
+
+    <form method="get" action="{{ url_for('reports') }}"
+          class="report-form" style="margin-bottom: 20px;">
+
+        <label>
+            Cari wilayah / unit kerja
+            <input
+                type="search"
+                name="q"
+                value="{{ search }}"
+                placeholder="Contoh: ACEH atau Unit Produksi"
+            >
+        </label>
+
+        <label>
+            Jenis pemantauan
+            <select name="domain">
+                <option value="" {% if not selected_domain %}selected{% endif %}>
+                    Semua jenis
+                </option>
+                <option value="population"
+                    {% if selected_domain == 'population' %}selected{% endif %}>
+                    Kesehatan populasi
+                </option>
+                <option value="workforce"
+                    {% if selected_domain == 'workforce' %}selected{% endif %}>
+                    Kesehatan tenaga kerja
+                </option>
+            </select>
+        </label>
+
+        <label>
+            Tanggal mulai
+            <input
+                type="date"
+                name="start_date"
+                value="{{ start_date }}"
+                max="{{ today }}"
+            >
+        </label>
+
+        <label>
+            Tanggal akhir
+            <input
+                type="date"
+                name="end_date"
+                value="{{ end_date }}"
+                max="{{ today }}"
+            >
+        </label>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="button primary" type="submit">
+                Terapkan filter
+            </button>
+
+            <a class="button" href="{{ url_for('reports') }}">
+                Reset filter
+            </a>
+
+            <a class="button primary"
+               href="{{ url_for(
+                   'export_reports',
+                   q=search,
+                   domain=selected_domain,
+                   start_date=start_date,
+                   end_date=end_date
+               ) }}">
+                Unduh CSV
+            </a>
+        </div>
+
+    </form>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>TANGGAL</th>
+                    <th>JENIS</th>
+                    <th>WILAYAH / UNIT</th>
+                    <th>INDIKATOR</th>
+                    <th>JUMLAH</th>
+                    <th>SUMBER</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td>{{ r.report_date.strftime('%d %b %Y') }}</td>
+
+                    <td>
+                        {{ 'Populasi' if r.domain == 'population'
+                           else 'Tenaga kerja' }}
+                    </td>
+
+                    <td>{{ r.region }}</td>
+
+                    <td>
+                        {{ r.indicator.replace('_', ' ').title() }}
+                    </td>
+
+                    <td>{{ r.count }}</td>
+
+                    <td>
+                        {{ 'Simulasi' if r.demo_record
+                           else 'Input pengguna' }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        Tidak ada laporan yang cocok dengan filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</article>
+
+{% endblock %}

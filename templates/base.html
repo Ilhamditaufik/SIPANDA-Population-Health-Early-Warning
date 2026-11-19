@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SIPANDA{% endblock %} · SIPANDA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">S</span><span>SIPANDA<small>HEALTH EARLY WARNING</small></span></a>
+    <div class="nav-caption">MENU UTAMA</div>
+    <nav>
+      <a class="{{ 'active' if request.endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}">▦ <span>Dashboard</span></a>
+      <a class="{{ 'active' if request.endpoint == 'reports' else '' }}" href="{{ url_for('reports') }}">＋ <span>Input Laporan</span></a>
+      <a class="{{ 'active' if request.endpoint == 'signals_page' else '' }}" href="{{ url_for('signals_page') }}">⌁ <span>Sinyal Multi-sumber</span></a>
+      <a class="{{ 'active' if request.endpoint == 'alerts_page' else '' }}" href="{{ url_for('alerts_page') }}">♧ <span>Peringatan Dini</span></a>
+      <a class="{{ 'active' if request.endpoint == 'risk_map_page' else '' }}" href="{{ url_for('risk_map_page') }}">⌖ <span>Peta Risiko & Tindakan</span></a>
+      <a class="{{ 'active' if request.endpoint == 'ai_insights_page' else '' }}" href="{{ url_for('ai_insights_page') }}">✦ <span>Gemini AI Insights</span></a>
+      <a class="{{ 'active' if request.endpoint == 'about' else '' }}" href="{{ url_for('about') }}">ⓘ <span>Tentang Sistem</span></a>
+      <a href="{{ url_for('public_demo') }}" target="_blank" rel="noopener">↗ <span>Demo Publik</span></a>
+      {% if current_user.is_authenticated and current_user.role == 'admin' %}
+      <a class="{{ 'active' if request.endpoint == 'users_page' else '' }}" href="{{ url_for('users_page') }}">♙ <span>Kelola Pengguna</span></a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-bottom"><div class="avatar">{{ current_user.username[:2]|upper }}</div><div><b>{{ current_user.username }}</b><small>{{ 'Administrator' if current_user.role == 'admin' else 'Petugas' }}</small><form method="post" action="{{ url_for('logout') }}" style="margin-top:8px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button" type="submit">Keluar</button></form></div></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><span class="eyebrow">SISTEM KESEHATAN TERPADU</span><h1>{% block page_heading %}Ringkasan Kesehatan{% endblock %}</h1></div><div class="top-actions"><span class="status-dot"></span> Mode prototipe <span class="date-pill">{{ now_label if now_label else '' }}</span></div></header>
+    <section class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+      <footer> SIPANDA · Prototipe inovasi kesehatan digital <span>Data demo bukan data kesehatan nyata.</span></footer>
+    </section>
+  </main>
+</body>
+</html>

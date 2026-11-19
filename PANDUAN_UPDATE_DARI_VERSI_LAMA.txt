@@ -1,0 +1,48 @@
+PANDUAN UPDATE SIPANDA — VERSI PENYEMPURNAAN REVIEWER
+
+PENTING: paket ini sengaja TIDAK menyertakan .env dan instance/sipanda.db.
+Tujuannya agar SECRET_KEY, akun, dan laporan yang sudah kamu miliki tidak ikut
+tertimpa atau tersebar.
+
+LANGKAH AMAN DI WINDOWS
+1. Hentikan Flask di terminal VS Code dengan Ctrl+C.
+2. Buka folder proyek lama: sipanda_starter.
+3. Buat backup database dan konfigurasi:
+   Copy-Item .\instance\sipanda.db ".\instance\sipanda_backup_$(Get-Date -Format yyyyMMdd_HHmmss).db"
+   Copy-Item .\.env .\.env.backup
+4. Ekstrak ZIP penyempurnaan ini ke folder sementara.
+5. Salin file/folder baru dari sipanda_starter pada ZIP ke folder sipanda_starter lama.
+   Pilih merge/overwrite untuk file kode, template, CSS, README, requirements, dan docs.
+   JANGAN menyalin folder instance dari ZIP dan JANGAN menghapus atau mengganti
+   instance\sipanda.db, backup database, .env, atau .env.backup lama.
+6. SECRET_KEY dari arsip sebelumnya pernah ikut dikirim bersama file proyek.
+   Ganti SECRET_KEY di .env lokal dengan kunci baru yang tidak dibagikan:
+   python -c "import secrets; print(secrets.token_hex(32))"
+   Salin hasil ke baris SECRET_KEY=... di file .env lokal. Jangan kirim kuncinya ke siapa pun.
+7. Pastikan baris LOAD_DEMO_DATA=true di .env jika ingin data simulasi reviewer dimuat.
+   Seed hanya menambah record berlabel demo_record=true; data lama tidak dihapus.
+8. Pastikan terminal masih memakai virtual environment yang sudah aktif (prompt menampilkan (.venv)). Di folder sipanda_starter, jalankan:
+   python -m pip install -r requirements.txt
+   python app.py
+   atau klik START_SIPANDA.bat.
+9. Login menggunakan akun lama. Tabel baru dibuat otomatis oleh db.create_all().
+10. Uji menu Sinyal Multi-sumber, Peringatan Dini, dan Peta Risiko & Tindakan.
+11. Buka http://127.0.0.1:5000/demo untuk melihat showcase baca-saja berbasis data simulasi.
+
+FITUR YANG DIJAWAB TERHADAP REVIEWER
+- /demo: showcase publik baca-saja; data yang tampil wajib berlabel simulasi.
+- Sinyal Multi-sumber: input suhu, AQI, absensi, dan insiden sebagai data agregat.
+- Peringatan Dini: Isolation Forest saat data lintas sumber mencukupi dan robust z-score
+  bergulir untuk menjelaskan indikator penyumbang. Konfirmasi multi-sumber dibatasi
+  pada jendela 3 hari.
+- Peta Risiko & Tindakan: peta centroid wilayah, profil PIC, tugas pencegahan, deadline,
+  dan status tindakan.
+- docs/VIDEO_DEMO_SCRIPT.md: storyboard untuk merekam video 3–4 menit.
+
+CATATAN
+- Jangan deploy instance database lokal yang berisi akun atau laporan pribadi.
+- Untuk link publik reviewer, deploy ke hosting HTTPS dengan database demo terpisah,
+  SECRET_KEY environment baru, COOKIE_SECURE=true, dan rate-limit storage bersama.
+- /demo siap menjadi URL yang dibagikan setelah deployment, tetapi ZIP ini tidak
+  menerbitkan hosting/domain publik secara otomatis.
+- Data dan koordinat simulasi bukan data lapangan. Semua alert perlu verifikasi manusia.

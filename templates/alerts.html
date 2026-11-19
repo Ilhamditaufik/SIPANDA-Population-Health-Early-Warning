@@ -1,0 +1,175 @@
+
+{% extends "base.html" %}
+{% block content %}
+
+<div class="welcome-row">
+    <div>
+        <h2>Anomali yang perlu diverifikasi</h2>
+        <p>Analisis menggabungkan laporan kesehatan, lingkungan, dan tenaga kerja pada jendela bergulir.</p>
+    </div>
+    <span class="pill">{{ model_name }}</span>
+</div>
+
+<div class="notice">
+    <span class="notice-icon">!</span>
+    <div>
+        <b>Keputusan tetap pada manusia</b>
+        <p>
+            Anomali hanya menandai pola yang berbeda dari baseline.
+            Ini bukan diagnosis, bukti hubungan sebab-akibat, atau penetapan wabah.
+            Petugas berwenang harus memeriksa kualitas data dan mengikuti prosedur institusi.
+        </p>
+    </div>
+</div>
+
+<article class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>Deteksi anomali multi-sumber</h3>
+            <p>
+                {{ 'Isolation Forest aktif bersama robust z-score untuk penjelasan.'
+                   if model_ready
+                   else 'Riwayat belum memenuhi syarat model; robust z-score digunakan sebagai fallback.' }}
+            </p>
+        </div>
+        <span class="pill">{{ anomaly_alerts|length }} wilayah terindikasi</span>
+    </div>
+
+    {% if anomaly_alerts %}
+    <div class="alert-list">
+        {% for a in anomaly_alerts %}
+        <div class="alert-card">
+
+            <div class="alert-card-top">
+                <span class="level {{ 'high' if a.level == 'Tinggi' else 'medium' }}">
+                    {{ a.level }}
+                </span>
+
+                <span class="category-tag">
+                    {{ 'Multi-sumber' if a.is_multi_source else 'Perlu sumber pembanding' }}
+                </span>
+
+                <span class="alert-total">
+                    Skor heuristik {{ a.risk_score }}/100
+                </span>
+            </div>
+
+            <h3>{{ a.region }} · {{ a.date.strftime('%d %b %Y') }}</h3>
+
+            <p>{{ a.explanation }}</p>
+
+            <div class="notice">
+                <div>
+                    <b>Metode deteksi</b>
+                    <p>{{ a.detection_method }}</p>
+                </div>
+            </div>
+
+            <p>
+                <b>Sumber penyumbang:</b>
+                {{ a.sources|join(', ') }}
+            </p>
+
+            <div class="driver-list">
+                {% for d in a.drivers %}
+                <span>
+                    {{ d.label }}: {{ d.value }} {{ d.unit }}
+                    · baseline {{ d.baseline }}
+                    · z {{ d.z_score }}
+                </span>
+                {% endfor %}
+            </div>
+
+            <div class="recommended">
+                <b>Rekomendasi tindakan berdasarkan indikator</b>
+
+                {% if a.recommendations %}
+                <ul>
+                    {% for recommendation in a.recommendations %}
+                    <li>{{ recommendation }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>
+                    Belum tersedia rekomendasi spesifik.
+                    Lakukan verifikasi data dan konsultasikan dengan PIC terkait.
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="notice">
+                <div>
+                    <b>Catatan validasi</b>
+                    <p>
+                        {{ a.verification_note }}
+                    </p>
+                    <p>
+                        {{ a.score_note }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="recommended">
+                <b>Langkah tindak lanjut</b>
+                <p>
+                    Verifikasi kelengkapan dan waktu data dari setiap sumber,
+                    hubungi PIC wilayah, bandingkan dengan situasi lapangan,
+                    lalu dokumentasikan keputusan petugas.
+                </p>
+
+                <a href="{{ url_for('risk_map_page') }}">
+                    Buka peta risiko dan tetapkan PIC →
+                </a>
+            </div>
+
+            {% if a.demo_record %}
+            <span class="pill">Mengandung data simulasi</span>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        Belum ada anomali yang memenuhi aturan analisis pada tujuh hari terakhir.
+        Ini tidak berarti wilayah bebas risiko.
+    </div>
+    {% endif %}
+</article>
+
+<article class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>Peringatan ambang lama</h3>
+            <p>Dipertahankan untuk pembanding dan keterlacakan prototipe.</p>
+        </div>
+        <span class="pill">{{ alerts|length }} item</span>
+    </div>
+
+    {% if alerts %}
+    <div class="alert-list">
+        {% for a in alerts %}
+        <div class="alert-card">
+            <div class="alert-card-top">
+                <span class="level {{ 'high' if a.level == 'Tinggi' else 'medium' }}">
+                    {{ a.level }}
+                </span>
+                <span class="category-tag">{{ a.domain }}</span>
+                <span class="alert-total">{{ a.total }} laporan</span>
+            </div>
+
+            <h3>{{ a.indicator }} — {{ a.region }}</h3>
+            <p>{{ a.message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        Tidak ada peringatan dari ambang demonstrasi lama.
+    </div>
+    {% endif %}
+</article>
+
+{% endblock %}

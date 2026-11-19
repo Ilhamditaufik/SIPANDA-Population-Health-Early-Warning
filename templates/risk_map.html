@@ -1,0 +1,735 @@
+
+{% extends "base.html" %}
+{% block title %}Peta Risiko & Tindakan{% endblock %}
+{% block page_heading %}Peta Risiko Kesehatan{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="">
+
+<div class="welcome-row">
+    <div>
+        <h2>Peta Risiko dan Tindak Lanjut</h2>
+        <p>
+            Pemantauan anomali kesehatan populasi dan tenaga kerja
+            berdasarkan analisis data agregat multi-sumber.
+        </p>
+    </div>
+    <span class="pill">{{ model_name }}</span>
+</div>
+
+<div class="notice">
+    <span class="notice-icon">i</span>
+    <div>
+        <b>Prinsip penggunaan dan interpretasi</b>
+        <p>
+            Hasil analisis merupakan alat bantu pemantauan,
+            bukan diagnosis, bukti hubungan sebab-akibat,
+            atau keputusan epidemiologis. Seluruh temuan
+            harus diverifikasi oleh petugas berwenang.
+            Gunakan koordinat pusat wilayah atau unit,
+            bukan lokasi rumah, pekerja, pasien, maupun individu.
+        </p>
+    </div>
+</div>
+
+<!-- RINGKASAN PETA DAN METODE -->
+<div class="dashboard-grid">
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Peta Sebaran Sinyal Kesehatan</h3>
+                <p>
+                    Marker menunjukkan status anomali berdasarkan
+                    hasil analisis tujuh hari terakhir.
+                </p>
+            </div>
+            <span class="pill">{{ map_points|length }} titik</span>
+        </div>
+
+        <div id="riskMap" class="risk-map"></div>
+
+        <div class="map-legend">
+            <span><i class="legend-dot high"></i> Tinggi</span>
+            <span><i class="legend-dot medium"></i> Waspada</span>
+            <span><i class="legend-dot low"></i> Belum terindikasi</span>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Ringkasan Metode Analisis</h3>
+                <p>
+                    Deteksi anomali berbasis pendekatan
+                    unsupervised dan statistik robust.
+                </p>
+            </div>
+        </div>
+
+        <div class="method-stat">
+            <b>{{ observations }}</b>
+            <span>
+                kombinasi wilayah-hari dalam jendela analisis
+            </span>
+        </div>
+
+        <p class="muted-copy">
+            <b>Metode:</b> {{ model_name }}
+        </p>
+
+        <p class="muted-copy">
+            {{ 'Isolation Forest berhasil dijalankan pada data yang memenuhi persyaratan model.'
+               if model_ready
+               else 'Riwayat belum memenuhi persyaratan model unsupervised; sistem menggunakan robust rolling z-score sebagai fallback.' }}
+        </p>
+
+        <p class="muted-copy">
+            Baseline dihitung dari riwayat bergulir hingga 28 hari
+            per wilayah dan indikator.
+        </p>
+
+        <p class="muted-copy">
+            Konfirmasi multi-sumber menggunakan jendela tujuh hari
+            dan memerlukan minimal dua kelompok sumber independen.
+        </p>
+
+        <div class="notice">
+            <div>
+                <b>Interpretasi skor</b>
+                <p>
+                    Skor merupakan skor heuristik untuk membantu
+                    menentukan prioritas peninjauan, bukan
+                    probabilitas kejadian atau diagnosis kesehatan.
+                </p>
+            </div>
+        </div>
+    </article>
+
+</div>
+
+<!-- PROFIL RISIKO -->
+<article class="panel table-panel">
+
+    <div class="panel-heading">
+        <div>
+            <h3>Profil Risiko per Wilayah</h3>
+            <p>
+                Wilayah tanpa koordinat tetap muncul dalam tabel,
+                tetapi tidak ditempatkan pada peta.
+            </p>
+        </div>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>WILAYAH</th>
+                    <th>STATUS</th>
+                    <th>SKOR HEURISTIK</th>
+                    <th>ANOMALI</th>
+                    <th>SUMBER TERKAIT</th>
+                    <th>PIC WILAYAH</th>
+                    <th>LOKASI</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for r in risks %}
+                <tr>
+                    <td>
+                        <b>{{ r.region }}</b>
+                        {% if r.demo_record %}
+                        <div class="muted-copy">Data simulasi</div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <span class="level {{ 'high' if r.level == 'Tinggi' else 'medium' if r.level == 'Waspada' else 'low' }}">
+                            {{ r.level }}
+                        </span>
+
+                        {% if r.has_multi_source %}
+                        <div class="muted-copy">Multi-sumber</div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <b>{{ r.risk_score }}/100</b>
+                        <div class="muted-copy">Bukan probabilitas</div>
+                    </td>
+
+                    <td>
+                        {{ r.anomaly_count }}
+
+                        {% if r.last_anomaly %}
+                        <div class="muted-copy">
+                            Terakhir:
+                            {{ r.last_anomaly.strftime('%d %b %Y') }}
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ r.sources|join(', ') if r.sources else 'Belum ada cakupan' }}
+                    </td>
+
+                    <td>
+                        {{ r.pic_name or 'Belum ditetapkan' }}
+
+                        {% if r.pic_role %}
+                        <div class="muted-copy">
+                            {{ r.pic_role }}
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if r.latitude is not none and r.longitude is not none %}
+                            {{ 'Ilustratif' if r.location_note and 'ilustratif' in r.location_note|lower else 'Titik agregat' }}
+                        {% else %}
+                            Koordinat belum diisi
+                        {% endif %}
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        Belum ada wilayah untuk dianalisis.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+
+<!-- FORM PROFIL WILAYAH -->
+{% if current_user.role == 'admin' %}
+
+<article class="panel">
+
+    <div class="panel-heading">
+        <div>
+            <h3>Daftarkan Titik Pusat Wilayah dan PIC</h3>
+            <p>
+                Gunakan centroid wilayah atau unit,
+                bukan lokasi individu.
+            </p>
+        </div>
+        <span class="pill">Admin</span>
+    </div>
+
+    <form method="post"
+          action="{{ url_for('save_region_profile') }}"
+          class="report-form">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <label>
+            Nama wilayah / unit
+            <input name="region"
+                   maxlength="100"
+                   required>
+        </label>
+
+        <label>
+            Latitude
+            <input type="number"
+                   name="latitude"
+                   step="any"
+                   min="-90"
+                   max="90"
+                   required>
+        </label>
+
+        <label>
+            Longitude
+            <input type="number"
+                   name="longitude"
+                   step="any"
+                   min="-180"
+                   max="180"
+                   required>
+        </label>
+
+        <label>
+            Nama PIC
+            <input name="pic_name"
+                   maxlength="120"
+                   placeholder="Nama / jabatan penanggung jawab">
+        </label>
+
+        <label>
+            Peran PIC
+            <input name="pic_role"
+                   maxlength="120"
+                   placeholder="Koordinator Kesmas / K3">
+        </label>
+
+        <label>
+            Catatan lokasi
+            <input name="location_note"
+                   maxlength="240"
+                   placeholder="Titik pusat wilayah agregat">
+        </label>
+
+        <button class="button primary" type="submit">
+            Simpan Profil Wilayah
+        </button>
+
+    </form>
+</article>
+
+{% endif %}
+
+<!-- PENUGASAN TINDAKAN -->
+<article class="panel">
+
+    <div class="panel-heading">
+        <div>
+            <article class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>Tetapkan tindakan pencegahan dan PIC</h3>
+            <p>
+                Pilih temuan AI untuk mengisi rekomendasi otomatis,
+                atau gunakan pencatatan manual.
+            </p>
+        </div>
+    </div>
+
+    <form method="post"
+          action="{{ url_for('add_action_assignment') }}"
+          class="report-form">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <label>
+            Temuan anomali AI
+            <select name="finding_key" id="findingKey">
+                <option value="">
+                    Pencatatan manual
+                </option>
+
+                {% for finding in finding_options %}
+                <option value="{{ finding.finding_key }}">
+                    {{ finding.region }} -
+                    {{ finding.level }} -
+                    {{ finding.date }}
+                    {% if finding.demo_record %}
+                    (Simulasi)
+                    {% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <p class="muted-copy">
+            Jika temuan AI dipilih, wilayah dan rekomendasi
+            tindakan akan diisi otomatis.
+        </p>
+
+        <label>
+            Wilayah / unit
+            <select name="region"
+                    id="actionRegion"
+                    required>
+
+                {% for r in risks %}
+                <option value="{{ r.region }}">
+                    {{ r.region }}
+                </option>
+                {% endfor %}
+
+            </select>
+        </label>
+
+        <label>
+            Ringkasan tindak lanjut
+            <input
+                name="title"
+                id="actionTitle"
+                maxlength="160"
+                required
+                placeholder="Contoh: Verifikasi anomali multi-sumber">
+        </label>
+
+        <label>
+            Tindakan yang disarankan
+            <textarea
+                name="recommended_action"
+                id="actionRecommendation"
+                rows="5"
+                maxlength="3000"
+                required
+                placeholder="Pilih temuan AI atau masukkan tindakan secara manual.">
+            </textarea>
+        </label>
+
+        <label>
+            Nama PIC
+            <input
+                name="assigned_to"
+                maxlength="120"
+                required
+                placeholder="Nama atau jabatan penanggung jawab">
+        </label>
+
+        <label>
+            Peran / unit PIC
+            <input
+                name="owner_role"
+                maxlength="120"
+                required
+                placeholder="Contoh: Petugas Kesmas / Supervisor K3">
+        </label>
+
+        <label>
+            Batas waktu
+            <input
+                type="date"
+                name="due_date">
+        </label>
+
+        <button class="button primary" type="submit">
+            Tetapkan PIC dan simpan
+        </button>
+
+    </form>
+</article>
+
+<script>
+(function () {
+    const findingSelect = document.getElementById("findingKey");
+    const regionSelect = document.getElementById("actionRegion");
+    const titleInput = document.getElementById("actionTitle");
+    const actionInput = document.getElementById("actionRecommendation");
+
+    const findings = {{ finding_options | tojson }};
+
+    if (!findingSelect || !regionSelect ||
+        !titleInput || !actionInput) {
+        return;
+    }
+
+    const originalTitle = titleInput.value;
+    const originalAction = actionInput.value;
+
+    findingSelect.addEventListener("change", function () {
+        const selectedKey = findingSelect.value;
+
+        if (!selectedKey) {
+            titleInput.value = originalTitle;
+            actionInput.value = originalAction;
+            return;
+        }
+
+        const finding = findings.find(
+            item => item.finding_key === selectedKey
+        );
+
+        if (!finding) {
+            return;
+        }
+
+        regionSelect.value = finding.region;
+        titleInput.value = finding.title;
+        actionInput.value = finding.recommended_action;
+    });
+})();
+</script>
+        </div>
+    </div>
+
+    <form method="post"
+          action="{{ url_for('add_action_assignment') }}"
+          class="report-form">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <label>
+            Wilayah / unit
+            <select name="region" required>
+                {% for r in risks %}
+                <option value="{{ r.region }}">
+                    {{ r.region }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Ringkasan tindak lanjut
+            <input name="title"
+                   maxlength="160"
+                   required
+                   placeholder="Verifikasi anomali multi-sumber">
+        </label>
+
+        <label>
+            Tindakan yang disarankan
+            <textarea name="recommended_action"
+                      rows="4"
+                      maxlength="3000"
+                      required
+                      placeholder="Jelaskan verifikasi data, koordinasi, dan pemeriksaan sesuai SOP."></textarea>
+        </label>
+
+        <label>
+            Nama PIC
+            <input name="assigned_to"
+                   maxlength="120"
+                   required
+                   placeholder="Nama atau jabatan">
+        </label>
+
+        <label>
+            Peran / unit PIC
+            <input name="owner_role"
+                   maxlength="120"
+                   required
+                   placeholder="Petugas Kesmas / Supervisor K3">
+        </label>
+
+        <label>
+            Batas waktu
+            <input type="date" name="due_date">
+        </label>
+
+        <button class="button primary" type="submit">
+            Tetapkan PIC dan Simpan Tindakan
+        </button>
+
+    </form>
+</article>
+
+<!-- DAFTAR TINDAK LANJUT -->
+<article class="panel table-panel">
+
+    <div class="panel-heading">
+        <div>
+            <h3>Daftar Tindak Lanjut</h3>
+            <p>
+                Pemantauan penanggung jawab dan progres
+                tindakan pencegahan.
+            </p>
+        </div>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>WILAYAH</th>
+                    <th>TINDAKAN</th>
+                    <th>PIC</th>
+                    <th>BATAS WAKTU</th>
+                    <th>STATUS</th>
+                    <th>PERBARUI</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for a in actions %}
+                <tr>
+                    <td>
+                        {{ a.region }}
+
+                        {% if a.demo_record %}
+                        <div class="muted-copy">Simulasi</div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <b>{{ a.title }}</b>
+                        <div class="muted-copy">
+                            {{ a.recommended_action }}
+                        </div>
+                    </td>
+
+                    <td>
+                        {{ a.assigned_to }}
+                        <div class="muted-copy">
+                            {{ a.owner_role }}
+                        </div>
+                    </td>
+
+                    <td>
+                        {{ a.due_date.strftime('%d %b %Y') if a.due_date else 'Belum ditentukan' }}
+                    </td>
+
+                    <td>
+                        {{ {
+                            'open':'Terbuka',
+                            'in_progress':'Berjalan',
+                            'done':'Selesai'
+                        }.get(a.status, a.status) }}
+                    </td>
+
+                    <td>
+                        {% if not a.demo_record %}
+
+                        <form method="post"
+                              action="{{ url_for('update_action_status', action_id=a.id) }}">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
+
+                            <select name="status">
+                                <option value="open"
+                                    {{ 'selected' if a.status == 'open' else '' }}>
+                                    Terbuka
+                                </option>
+
+                                <option value="in_progress"
+                                    {{ 'selected' if a.status == 'in_progress' else '' }}>
+                                    Berjalan
+                                </option>
+
+                                <option value="done"
+                                    {{ 'selected' if a.status == 'done' else '' }}>
+                                    Selesai
+                                </option>
+                            </select>
+
+                            <button class="button" type="submit">
+                                Simpan
+                            </button>
+                        </form>
+
+                        {% else %}
+                        <span class="muted-copy">
+                            Contoh data demo
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        Belum ada tindak lanjut yang dicatat.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+
+<!-- LEAFLET MAP -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<script>
+(function () {
+
+    const points = {{ map_points|tojson }};
+    const el = document.getElementById('riskMap');
+
+    if (!el) return;
+
+    if (!window.L) {
+        el.innerHTML =
+            '<div class="empty-state">' +
+            'Pustaka peta tidak dapat dimuat. ' +
+            'Periksa koneksi internet untuk memuat peta.' +
+            '</div>';
+        return;
+    }
+
+    const map = L.map(el).setView([-2.5, 118], 5);
+
+    L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors'
+        }
+    ).addTo(map);
+
+    const bounds = [];
+
+    points.forEach(function (p) {
+
+        const color =
+            p.level === 'Tinggi'
+                ? '#d94a4a'
+                : p.level === 'Waspada'
+                    ? '#d99527'
+                    : '#269b72';
+
+        const marker = L.circleMarker(
+            [p.lat, p.lng],
+            {
+                radius: 10,
+                color: '#fff',
+                weight: 2,
+                fillColor: color,
+                fillOpacity: 0.9
+            }
+        ).addTo(map);
+
+        const title = document.createElement('b');
+        title.textContent = p.region;
+
+        const detail = document.createElement('div');
+        detail.textContent =
+            'Status: ' + p.level +
+            ' | Skor heuristik: ' + p.score + '/100';
+
+        const owner = document.createElement('div');
+        owner.textContent =
+            'PIC: ' + (p.pic || 'Belum ditetapkan') +
+            (p.demo ? ' | Lokasi ilustratif' : '');
+
+        const scoreNote = document.createElement('div');
+        scoreNote.textContent =
+            'Skor bukan probabilitas risiko kesehatan.';
+
+        const wrap = document.createElement('div');
+
+        wrap.append(
+            title,
+            detail,
+            owner,
+            scoreNote
+        );
+
+        marker.bindPopup(wrap);
+
+        bounds.push([p.lat, p.lng]);
+
+    });
+
+    if (bounds.length > 1) {
+        map.fitBounds(bounds, {
+            padding: [25, 25]
+        });
+    } else if (bounds.length === 1) {
+        map.setView(bounds[0], 11);
+    }
+
+    setTimeout(function () {
+        map.invalidateSize();
+    }, 200);
+
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Tentang Sistem{% endblock %}
+{% block page_heading %}Tentang SIPANDA{% endblock %}
+{% block content %}
+<div class="welcome-row"><div><h2>Satu sistem, tiga kelompok sinyal</h2><p>Prototipe untuk membantu petugas meninjau pola kesehatan populasi dan tenaga kerja secara lebih terstruktur.</p></div><a class="button primary" href="{{ url_for('public_demo') }}" target="_blank" rel="noopener">Lihat demo publik</a></div>
+<div class="feature-grid">
+  <article class="panel feature"><div class="feature-icon blue">⌂</div><h3>Layanan kesehatan</h3><p>Laporan agregat populasi dan tenaga kerja menjadi salah satu kelompok sinyal yang dapat ditinjau berdasarkan wilayah dan tanggal.</p></article>
+  <article class="panel feature"><div class="feature-icon purple">⌁</div><h3>Lingkungan dan tenaga kerja</h3><p>Pengamatan suhu, kualitas udara, ketidakhadiran, dan insiden kerja dapat ditambahkan sebagai sinyal agregat dengan sumber serta satuan yang jelas.</p></article>
+  <article class="panel feature"><div class="feature-icon orange">♧</div><h3>Deteksi yang dapat dijelaskan</h3><p>Isolation Forest menandai pola tidak biasa ketika data memadai. Robust rolling z-score memperlihatkan metrik penyumbang dan baseline pembanding.</p></article>
+</div>
+<article class="panel roadmap"><h3>Alur pemantauan</h3><ol>
+<li><b>Pengumpulan</b><span>Petugas memasukkan laporan kesehatan dan sinyal lingkungan/tenaga kerja yang sah, agregat, serta terdokumentasi.</span></li>
+<li><b>Analisis</b><span>Sistem menyelaraskan pengamatan menurut wilayah dan tanggal, lalu menjalankan deteksi anomali unsupervised jika data mencukupi.</span></li>
+<li><b>Penjelasan</b><span>Halaman peringatan menampilkan indikator yang menyimpang, baseline, skor prototipe, sumber, serta keterbatasan data.</span></li>
+<li><b>Verifikasi manusia</b><span>Petugas kesehatan/K3 memeriksa sumber, kualitas data, konteks lapangan, dan menentukan apakah tindak lanjut diperlukan.</span></li>
+<li><b>Penanggung jawab</b><span>Wilayah dapat memiliki titik pusat agregat dan PIC; tindak lanjut dapat dicatat bersama tenggat serta status.</span></li>
+</ol></article>
+<div class="notice"><span class="notice-icon">!</span><div><b>Batasan dan penggunaan bertanggung jawab</b><p>SIPANDA masih prototipe. Contoh data dan koordinat peta bersifat simulasi/ilustratif. Isolation Forest dan robust z-score belum divalidasi secara klinis atau epidemiologis; skor bukan probabilitas risiko medis. Tidak ada integrasi sensor otomatis pada rilis ini. Hasil bukan diagnosis dan tidak menggantikan keputusan profesional.</p></div></div>
+{% endblock %}

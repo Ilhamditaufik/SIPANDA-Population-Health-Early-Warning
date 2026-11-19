@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Risk Insights | SIPANDA</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px 16px;
+            background: #f1f5f9;
+            color: #172033;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: auto;
+        }
+
+        .header, .panel {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .header h1 {
+            margin-top: 0;
+            color: #123b68;
+        }
+
+        .muted {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .button {
+            display: inline-block;
+            border: 0;
+            border-radius: 8px;
+            padding: 13px 20px;
+            background: #1769aa;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background: #12558a;
+        }
+
+        .result {
+            background: #f8fafc;
+            border-left: 4px solid #1769aa;
+            border-radius: 8px;
+            padding: 22px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .error {
+            padding: 14px;
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .alert {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            margin-bottom: 10px;
+        }
+
+        .warning {
+            color: #a16207;
+            font-weight: bold;
+        }
+
+        .high {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        @media(max-width: 600px) {
+            body {
+                padding: 14px 10px;
+            }
+
+            .header, .panel {
+                padding: 17px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <section class="header">
+        <p class="muted">SISTEM PERINGATAN DINI KESEHATAN</p>
+
+        <h1>✦ Gemini AI Risk Insights</h1>
+
+        <p>
+            Analisis dan penjelasan berbantuan Generative AI
+            berdasarkan hasil deteksi anomali multi-sumber SIPANDA.
+        </p>
+
+        <p class="muted">
+            Generative AI: {{ model_name }}<br>
+            Detection engine: {{ detection_model }}<br>
+            Observasi dianalisis: {{ observations }}
+        </p>
+
+        <div class="actions">
+            <a href="{{ url_for('dashboard') }}" class="button">
+                Kembali ke Dashboard
+            </a>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Temuan Anomali</h2>
+
+        {% if alerts %}
+            {% for alert in alerts[:10] %}
+                <div class="alert">
+                    <strong>{{ alert.get('region', 'Wilayah tidak diketahui') }}</strong>
+
+                    <p>
+                        Tingkat risiko:
+                        <span class="{% if alert.get('level') == 'Tinggi' %}high{% else %}warning{% endif %}">
+                            {{ alert.get('level', 'Belum ditentukan') }}
+                        </span>
+                    </p>
+
+                    <p class="muted">
+                        Tanggal: {{ alert.get('date', '-') }}<br>
+                        Metode: {{ alert.get('detection_method', '-') }}
+                    </p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>Belum ada temuan anomali yang tersedia.</p>
+        {% endif %}
+
+        <form method="POST">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <button
+                type="submit"
+                class="button"
+                {% if not alerts %}disabled{% endif %}
+            >
+                ✦ Analisis dengan Gemini AI
+            </button>
+        </form>
+
+        {% if ai_error %}
+            <div class="error">
+                {{ ai_error }}
+            </div>
+        {% endif %}
+    </section>
+
+    {% if ai_result %}
+        <section class="panel">
+            <h2>✦ Hasil Analisis Gemini AI</h2>
+
+            <p class="muted">
+                Hasil ini merupakan interpretasi AI atas temuan
+                algoritma, bukan diagnosis atau keputusan klinis.
+            </p>
+
+            <div class="result">{{ ai_result }}</div>
+        </section>
+    {% endif %}
+
+    <section class="panel">
+        <h3>Catatan Penggunaan</h3>
+
+        <p class="muted">
+            SIPANDA merupakan prototipe sistem peringatan dini.
+            Hasil analisis AI harus diperiksa dan diverifikasi
+            oleh petugas yang berwenang. Hasil deteksi anomali
+            tidak membuktikan adanya penyakit, wabah, atau
+            hubungan sebab-akibat.
+        </p>
+
+        <p class="muted">
+            Jangan memasukkan data identitas individu atau
+            informasi kesehatan pribadi ke layanan AI.
+        </p>
+    </section>
+
+</div>
+</body>
+</html>

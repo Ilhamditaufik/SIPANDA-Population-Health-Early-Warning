@@ -1,0 +1,80 @@
+
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Setup Awal SIPANDA</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<main class="main"
+      style="max-width:760px;margin:8vh auto;padding:24px">
+    <article class="panel form-panel">
+        <h1>Setup Administrator SIPANDA</h1>
+
+        <p>
+            Masukkan token otorisasi untuk membuat administrator pertama.
+            Gunakan kata sandi unik minimal 12 karakter.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" class="report-form">
+            <input type="hidden"
+                   name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <label>
+                Token Setup
+                <input type="password"
+                       name="setup_token"
+                       autocomplete="off"
+                       required>
+            </label>
+
+            <label>
+                Username
+                <input type="text"
+                       name="username"
+                       minlength="4"
+                       maxlength="80"
+                       autocomplete="username"
+                       required>
+            </label>
+
+            <label>
+                Kata sandi
+                <input type="password"
+                       name="password"
+                       minlength="12"
+                       autocomplete="new-password"
+                       required>
+            </label>
+
+            <label>
+                Konfirmasi kata sandi
+                <input type="password"
+                       name="confirm_password"
+                       minlength="12"
+                       autocomplete="new-password"
+                       required>
+            </label>
+
+            <button class="button primary" type="submit">
+                Buat administrator
+            </button>
+        </form>
+    </article>
+</main>
+</body>
+</html>

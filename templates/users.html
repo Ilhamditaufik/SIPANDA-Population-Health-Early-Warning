@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Kelola Pengguna{% endblock %}
+{% block page_heading %}Kelola Pengguna{% endblock %}
+{% block content %}
+<div class="welcome-row"><div><h2>Akun administrator dan petugas</h2><p>Hanya administrator yang dapat membuat akun.</p></div></div>
+<div class="form-layout"><article class="panel form-panel"><div class="panel-heading"><div><h3>Buat akun baru</h3><p>Kata sandi minimal 12 karakter.</p></div></div>
+<form method="post" class="report-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Username<input name="username" minlength="4" maxlength="80" required></label><label>Kata sandi sementara<input type="password" name="password" minlength="12" autocomplete="new-password" required></label><label>Peran<select name="role" required><option value="petugas">Petugas</option><option value="admin">Administrator</option></select></label><button class="button primary" type="submit">Buat akun</button></form></article>
+<article class="panel table-panel"><div class="panel-heading"><div><h3>Daftar pengguna</h3><p>Jangan bagikan kata sandi antar pengguna.</p></div></div><div class="table-scroll"><table><thead><tr><th>USERNAME</th><th>PERAN</th><th>STATUS</th></tr></thead><tbody>{% for user in users %}<tr><td>{{ user.username }}</td><td>{{ 'Administrator' if user.role == 'admin' else 'Petugas' }}</td><td>{{ 'Aktif' if user.active else 'Nonaktif' }}</td></tr>{% endfor %}</tbody></table></div></article></div>
+{% endblock %}
